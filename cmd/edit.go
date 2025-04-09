@@ -31,7 +31,7 @@ If no editor command found, ask you to choose between vim and nano.
 
 After editing you will be promted if you'd like to use 'sshabu apply'`,
 	Run: func(cmd *cobra.Command, args []string) {
-		editFile(cfgFile) 
+		editFile(cfgFile)
 	},
 }
 
@@ -47,18 +47,21 @@ func editFile(filePath string) {
 
 		editor := ""
 		fmt.Println("Editor is not installed.")
-		fmt.Println("Choose an editor [nano/vim or press Enter]: ")
+		fmt.Println("Choose an editor [nano/vim/custom (your own)] or press Enter: ")
 		reader := bufio.NewReader(os.Stdin)
 		choice, _ := reader.ReadString('\n')
 		choice = strings.TrimSpace(choice)
-		switch choice {
-		case "nano":
-			editor = "nano"
-		case "vim":
-			editor = "vim"
-		default:
+
+		if choice == "" {
 			fmt.Println("Vim is the right choice!")
 			editor = "vim"
+		} else {
+			if path, err := exec.LookPath(choice); err == nil {
+				editor = path
+			} else {
+				fmt.Printf("Editor '%s' not found in PATH.\n", choice)
+				return
+			}
 		}
 		cmd := exec.Command(editor, filePath)
 		cmd.Stdin = os.Stdin
@@ -70,7 +73,6 @@ func editFile(filePath string) {
 			return
 		}
 	}
-	
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Would you like sshabu to apply changes? [y/n]: ")
@@ -91,7 +93,6 @@ func editFile(filePath string) {
 		fmt.Println("Changes was not applied.")
 	}
 }
-
 
 func init() {
 	rootCmd.AddCommand(editCmd)
