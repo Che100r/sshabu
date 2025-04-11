@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	sshabu "sshabu/pkg"
 
 	"github.com/spf13/cobra"
@@ -37,13 +38,13 @@ Optionally you could pass openssh parametrs or override user
 ~ sshabu connect -o "-p 2222 -i /path/to/dir" user@host_example
 # ssh -F $HOME/.sshabu/openssh.config -p 2222 -i /path/to/dir user@host_example
 `,
-ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) != 0 {
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) != 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		file, _ := os.Open(opensshDestconfigFile)
- 
+
 		defer file.Close()
 
 		hostValues, err := sshabu.DestinationHosts(file)
@@ -54,9 +55,20 @@ ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([
 		return hostValues, cobra.ShellCompDirectiveNoFileComp
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-			// Construct the ssh command with -I option
+		// Construct the ssh command with -I option
 
 		args = append(args, extraOptions)
+
+		file, _ := os.Open(opensshDestconfigFile)
+
+		defer file.Close()
+
+		hostValues, _ := sshabu.DestinationHosts(file)
+
+		if !slices.Contains(hostValues, args[0]) {
+			fmt.Printf("Host %s not found in sshabu.yaml\n", args[0])
+			return
+		}
 
 		sshArgs := append([]string{"-F", opensshDestconfigFile}, args...)
 
